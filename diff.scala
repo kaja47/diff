@@ -142,4 +142,50 @@ object diff {
 
     res
   }
+
+
+  // tree diffs
+
+
+  sealed trait Tree[+T]
+  case class Node[+T](children: Seq[Tree[T]]) extends Tree[T]
+  case class Leaf[+T](value: T) extends Tree[T]
+
+  def node[T](children: Tree[T]*) = Node(children)
+
+  sealed trait Token[+T]
+  case object Enter extends Token[Nothing]
+  case object Leave extends Token[Nothing]
+  case class Value[T](value: T) extends Token[T]
+
+
+  def traversal[T](tree: Tree[T]): Seq[Token[T]] = {
+    tree match {
+      case Node(children) => Enter +: (children flatMap traversal) :+ Leave
+      case Leaf(value) => Vector(Value(value))
+    }
+  }
+
+  private def mkSeq[T](nodes: Seq[Tree[T]], tokens: Seq[Token[T]]): (Seq[Tree[T]], Seq[Token[T]]) = {
+    tokens.head match {
+      case Enter =>
+        val (n, rest) = mkNode(tokens.tail)
+        mkSeq(nodes :+ n, rest)
+      case Leave => (nodes, tokens.tail)
+      case Value(v) => mkSeq(nodes :+ Leaf(v), tokens.tail)
+    }
+  }
+
+  private def mkNode[T](tokens: Seq[Token[T]]): (Tree[T], Seq[Token[T]]) = {
+    val (nodes, rest) = mkSeq(Seq(), tokens)
+    (Node(nodes), rest)
+  }
+
+
+  def makeTree[T](tokens: Seq[Token[T]]): Tree[T] = {
+    require(tokens.head match { case Enter => true ; case _ => false })
+    val (tree, rest) = mkNode(tokens.tail)
+    require(rest.isEmpty, "rest is not empty")
+    tree
+  }
 }
