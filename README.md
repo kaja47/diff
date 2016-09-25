@@ -22,4 +22,16 @@ val bw = b.split(" ").toSeq
 
 val deltaw = diff(aw, bw)
 assert(patch(aw, deltaw) == bw)
+
+
+// tree diff
+
+
+val ta = node(Leaf(1), node(Leaf(2), Leaf(3)))
+val tb = node(node(Leaf(1), Leaf(2)), Leaf(3))
+
+val tdelta = diff(traversal(ta), traversal(tb))
+
+
+assert(makeTree(patch(traversal(ta), tdelta)) == tb)
 ```
