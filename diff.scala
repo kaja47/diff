@@ -11,7 +11,7 @@ object diff {
 
 
   // Longest common subsequence
-  def lcs[T](a: Seq[T], b: Seq[T]): Seq[T] = {
+  def lcs[T](a: IndexedSeq[T], b: IndexedSeq[T]): IndexedSeq[T] = {
     val alen = a.length
     val blen = b.length
 
@@ -33,7 +33,7 @@ object diff {
     }
 
     // read the substring out from the matrix
-    var res = List[T]()
+    var res = ArrayBuffer[T]()
     var x = alen
     var y = blen
     while (x != 0 && y != 0) {
@@ -43,20 +43,20 @@ object diff {
         y -= 1
       else {
         assert(a(x-1) == b(y-1))
-        res = a(x-1) :: res
+        res += a(x-1)
         x -= 1
         y -= 1
       }
     }
 
-    res
+    res.reverse
   }
 
 
 
-  def diff[T](a: Seq[T], b: Seq[T]): Seq[Diff[T]] = {
+  def diff[T](a: IndexedSeq[T], b: IndexedSeq[T]): IndexedSeq[Diff[T]] = {
 
-    val diffs = new ArrayBuilder.ofRef[Diff[T]]()
+    val diffs = ArrayBuffer[Diff[T]]()
     val cs = lcs(a, b)
     var apos, bpos = 0
 
@@ -104,8 +104,7 @@ object diff {
       diffs += Add(aDiffPos, adds)
     }
 
-    diffs.result
-
+    diffs
   }
 
 
