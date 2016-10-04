@@ -187,4 +187,69 @@ object diff {
     require(rest.isEmpty, "rest is not empty")
     tree
   }
+
+
+
+
+  // Dynamic time warping
+
+
+  def dtwMatrix[T](a: IndexedSeq[T], b: IndexedSeq[T], dist: (T, T) => Double): Array[Array[Double]] = {
+    val alen = a.length
+    val blen = b.length
+
+    val dtw: Array[Array[Double]] = Array.fill(alen+1) { new Array[Double](blen+1) }
+
+    for (i <- 1 to alen) dtw(i)(0) = Double.PositiveInfinity
+    for (i <- 1 to blen) dtw(0)(i) = Double.PositiveInfinity
+
+    for (i <- 1 to alen ; j <- 1 to blen) {
+      val cost = dist(a(i-1), b(j-1))
+      dtw(i)(j) = cost + math.min(math.min(dtw(i-1)(j  ),  // insertion
+                                           dtw(i  )(j-1)), // deletion
+                                           dtw(i-1)(j-1))  // match
+    }
+
+    dtw
+  }
+
+  def readDtwPath(dtw: Array[Array[Double]]): List[(Int, Int)] = {
+    val alen = dtw.length - 1
+    val blen = dtw(0).length - 1
+
+    // read the substring out from the matrix
+    var x = alen
+    var y = blen
+    var res = List[(Int, Int)]()
+
+    while (x != 0 && y != 0) {
+      res = (x-1, y-1) :: res
+
+      val aaa = dtw(x-1)(y  ) // insertion
+      val bbb = dtw(x  )(y-1) // deletion
+      val dia = dtw(x-1)(y-1) // match
+
+       if (aaa <= dia && aaa <= bbb) {
+        x -= 1
+      } else if (bbb <= dia && bbb <= aaa) {
+        y -= 1
+      } else {
+        require(dia <= aaa && dia <= bbb)
+        x -= 1
+        y -= 1
+      }
+    }
+
+    res
+  }
+
+  def readDtwPath[T](dtw: Array[Array[Double]], a: IndexedSeq[T], b: IndexedSeq[T]): List[(T, T)] =
+    readDtwPath(dtw) map { case (i,j) => (a(i), b(j)) }
+
+  /** Dynamic time warping */
+  def dtw[T](a: IndexedSeq[T], b: IndexedSeq[T], dist: (T, T) => Double): List[(T, T)] =
+    readDtwPath(dtwMatrix(a, b, dist), a, b)
+
+  def lcsViaDtw[T](a: Seq[T], b: Seq[T]): Seq[T] =
+    readDtwPath(dtwMatrix(a, b, (a: T, b: T) => if (a == b) -1 else 0)) collect { case (i, j) if a(i) == b(j) => a(i) }
 }
