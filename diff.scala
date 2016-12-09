@@ -2,6 +2,7 @@ package atrox
 
 import collection.mutable.ArrayBuilder
 import collection.mutable.ArrayBuffer
+import math.min
 
 object diff {
 
@@ -205,9 +206,9 @@ object diff {
 
     for (i <- 1 to alen ; j <- 1 to blen) {
       val cost = dist(a(i-1), b(j-1))
-      dtw(i)(j) = cost + math.min(math.min(dtw(i-1)(j  ),  // insertion
-                                           dtw(i  )(j-1)), // deletion
-                                           dtw(i-1)(j-1))  // match
+      dtw(i)(j) = cost + min(min(dtw(i-1)(j  ),  // insertion
+                                 dtw(i  )(j-1)), // deletion
+                                 dtw(i-1)(j-1))  // match
     }
 
     dtw
@@ -250,6 +251,40 @@ object diff {
   def dtw[T](a: IndexedSeq[T], b: IndexedSeq[T], dist: (T, T) => Double): List[(T, T)] =
     readDtwPath(dtwMatrix(a, b, dist), a, b)
 
-  def lcsViaDtw[T](a: Seq[T], b: Seq[T]): Seq[T] =
+  def lcsViaDtw[T](a: IndexedSeq[T], b: IndexedSeq[T]): Seq[T] =
     readDtwPath(dtwMatrix(a, b, (a: T, b: T) => if (a == b) -1 else 0)) collect { case (i, j) if a(i) == b(j) => a(i) }
+
+
+  def levenshtein[T](as: IndexedSeq[T], bs: IndexedSeq[T]): Int = {
+    val f = new Array[Int](bs.length+1)
+
+    var j = 0 ; while (j < f.length) {
+      f(j) = j
+      j += 1
+    }
+
+    for (a <- as) {
+      var j = 1
+      // fj1 is the value of f[j - 1] in last iteration
+      var fj1 = f(0)
+      f(0) += 1
+      for (cb <- bs) {
+        var mn = min(f(j)+1, f(j-1)+1) // delete & insert
+        if (cb != a) {
+          mn = min(mn, fj1+1) // change
+        } else {
+          mn = min(mn, fj1) // matched
+        }
+
+        // save f[j] to fj1(j is about to increase), update f[j] to mn
+        //fj1, f(j) = f(j), mn
+        fj1 = f(j)
+        f(j) = mn
+        j += 1
+      }
+    }
+
+    f(f.length-1)
+  }
+
 }
